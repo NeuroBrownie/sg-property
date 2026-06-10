@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SG Property Calculator</title>
+
+<!-- iOS Home Screen / PWA tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SG Property">
+<meta name="theme-color" content="#0D1B2A">
+
+<!-- App icon: generate a simple SVG data URL as the touch icon -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230D1B2A'/%3E%3Ctext x='90' y='115' font-size='90' text-anchor='middle' font-family='system-ui'%3E🏠%3C/text%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#0D1B2A;--navy2:#152233;--navy3:#1E3148;
+    --accent:#3B82F6;--accent2:#1D4ED8;
+    --teal:#0D9488;--amber:#F59E0B;--red:#EF4444;--green:#10B981;--purple:#8B5CF6;
+    --text:#F0F4F8;--text2:#8BA0B7;--textm:#4A6585;
+    --border:#1E3148;--borderl:#2A4363;--card:#152233;
+    --mono:'JetBrains Mono',monospace;--ui:'Inter',sans-serif;
+  }
+  body{font-family:var(--ui);background:var(--navy);color:var(--text);min-height:100vh;padding:max(24px, env(safe-area-inset-top)) 16px max(80px, env(safe-area-inset-bottom)) 16px}
+
+  /* ── Header ── */
+  .hdr{max-width:1040px;margin:0 auto 26px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .hdr h1{font-size:21px;font-weight:700;letter-spacing:-.5px}
+  .hdr p{font-size:13px;color:var(--text2);margin-top:3px}
+  .badge{font-family:var(--mono);font-size:10px;background:var(--navy3);border:1px solid var(--borderl);color:var(--text2);padding:4px 10px;border-radius:20px}
+
+  /* ── Layout ── */
+  .wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .cols{display:grid;grid-template-columns:360px 1fr;gap:14px;align-items:start}
+  @media(max-width:780px){.cols{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:14px}
+
+  /* ── Summary strip ── */
+  .strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media(max-width:780px){.strip{grid-template-columns:1fr 1fr}}
+
+  /* ── Cards ── */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .ctitle{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--textm);margin-bottom:14px}
+
+  /* ── Metric cards ── */
+  .mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px}
+  .mc.hi{border-color:var(--accent);background:linear-gradient(135deg,#152233,#1a2d4a)}
+  .mc.hi2{border-color:var(--purple);background:linear-gradient(135deg,#152233,#1e1a3a)}
+  .ml{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--textm);margin-bottom:6px}
+  .mv{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--text);line-height:1}
+  .mv .cur{font-size:11px;color:var(--text2);margin-right:2px}
+  .mc.hi .mv{color:var(--accent)}.mc.hi2 .mv{color:var(--purple)}
+  .ms{font-size:10px;color:var(--textm);margin-top:4px;font-family:var(--mono)}
+
+  /* ── Fields ── */
+  .field{margin-bottom:13px}.field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px}
+  .iw{position:relative;display:flex;align-items:center}
+  .pfx{position:absolute;left:11px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--textm);pointer-events:none;user-select:none;white-space:nowrap}
+  .iw input,.iw select{width:100%;background:var(--navy);border:1.5px solid var(--borderl);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;font-weight:500;padding:9px 12px 9px 42px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+  .iw select{padding-left:12px;font-family:var(--ui);font-size:12px;cursor:pointer}
+  .iw input:focus,.iw select:focus{border-color:var(--accent)}
+  .iw input::placeholder{color:var(--textm)}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  /* slider */
+  .sw{margin-top:5px}
+  .sl{display:flex;justify-content:space-between;font-size:10px;color:var(--textm);font-family:var(--mono);margin-top:3px}
+  input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--navy3);border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;cursor:pointer;border:2px solid var(--navy);box-shadow:0 0 0 2px var(--accent2)}
+
+  /* ── Rate buckets ── */
+  .rbuckets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .rbucket{background:var(--navy3);border:1.5px solid var(--borderl);border-radius:10px;padding:12px}
+  .rbucket.fb{border-color:rgba(59,130,246,.4)}.rbucket.sb{border-color:rgba(139,92,246,.4)}
+  .bpill{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.5px;margin-bottom:6px}
+  .pf{background:rgba(59,130,246,.15);color:#93C5FD;border:1px solid rgba(59,130,246,.3)}
+  .ps{background:rgba(139,92,246,.15);color:#C4B5FD;border:1px solid rgba(139,92,246,.3)}
+  .brd{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1;margin-bottom:2px}
+  .fb .brd{color:#60A5FA}.sb .brd{color:#A78BFA}
+  .bdesc{font-size:10px;color:var(--textm)}
+  .fyr{display:flex;align-items:center;gap:7px;margin-top:8px}
+  .fyr label{font-size:10px;color:var(--textm);white-space:nowrap}
+  .fyr input,.smi input{width:100%;background:var(--navy);border:1px solid var(--borderl);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 8px;outline:none;-webkit-appearance:none;text-align:center}
+  .fyr input{width:52px}.fyr input:focus{border-color:var(--accent)}
+  .sis{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+  .sml{font-size:10px;color:var(--textm);margin-bottom:3px}
+  .smi input:focus{border-color:var(--purple)}
+  .seq{font-size:10px;color:var(--textm);font-family:var(--mono);margin-top:5px;text-align:center}
+
+  /* SORA fetch button */
+  .sora-fetch-row{display:flex;align-items:center;gap:7px;margin-top:8px}
+  .sora-btn{display:flex;align-items:center;gap:5px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.35);color:#C4B5FD;font-family:var(--ui);font-size:11px;font-weight:600;padding:6px 11px;border-radius:7px;cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap}
+  .sora-btn:hover{background:rgba(139,92,246,.28);border-color:rgba(139,92,246,.55)}
+  .sora-btn:disabled{opacity:.45;cursor:not-allowed}
+  .sora-btn .spin{display:inline-block;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sora-live{font-size:10px;font-family:var(--mono);color:var(--textm);flex:1}
+  .sora-live .sl-val{color:#A78BFA;font-weight:600}
+  .sora-live .sl-date{color:var(--textm)}
+
+  /* Tenor selector */
+  .sora-tenor-row{display:flex;align-items:center;gap:8px;margin-top:8px;margin-bottom:2px}
+  .sora-tenor-row label{font-size:10px;color:var(--textm);white-space:nowrap}
+  .tenor-btns{display:flex;gap:4px}
+  .tenor-btn{background:var(--navy);border:1px solid var(--borderl);color:var(--textm);font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .15s;-webkit-appearance:none}
+  .tenor-btn:hover{border-color:var(--purple);color:#C4B5FD}
+  .tenor-btn.active{background:rgba(139,92,246,.2);border-color:rgba(139,92,246,.5);color:#C4B5FD}
+  .frt{margin-top:8px}.frt .sml{margin-bottom:3px}
+  .frt input{width:100%;background:var(--navy);border:1px solid var(--borderl);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 8px;outline:none;-webkit-appearance:none;text-align:left}
+  .frt input:focus{border-color:var(--accent)}
+
+  /* rate timeline */
+  .rtl{margin:12px 0 0;position:relative}
+  .tbar{height:7px;border-radius:4px;display:flex;overflow:hidden;gap:2px}
+  .tbf{background:#3B82F6;border-radius:4px 0 0 4px;transition:width .4s}
+  .tbs{background:#8B5CF6;flex:1;border-radius:0 4px 4px 0}
+  .tll{display:flex;justify-content:space-between;font-size:10px;color:var(--textm);font-family:var(--mono);margin-top:3px}
+
+  /* phase compare */
+  .phc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .pb{border-radius:10px;padding:12px}
+  .pb.pf2{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2)}
+  .pb.ps2{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2)}
+  .pt{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:7px}
+  .pf2 .pt{color:#60A5FA}.ps2 .pt{color:#A78BFA}
+  .pm{font-family:var(--mono);font-size:19px;font-weight:700;line-height:1}
+  .pf2 .pm{color:#93C5FD}.ps2 .pm{color:#C4B5FD}
+  .pd{font-size:10px;color:var(--textm);margin-top:3px;font-family:var(--mono)}
+  .pdelta{margin-top:7px;font-size:10px;font-weight:600;font-family:var(--mono)}
+
+  /* interest callout */
+  .ic{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:9px 13px;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+  .ic .icl{font-size:11px;color:var(--textm)}
+  .ic .icv{font-family:var(--mono);font-size:14px;font-weight:600;color:#C4B5FD}
+
+  /* ── Breakdown ── */
+  .bl{display:flex;flex-direction:column;gap:7px}
+  .lr{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+  .ll{display:flex;align-items:center;gap:6px;color:var(--text2)}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .lrv{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);text-align:right}
+  .lrp{font-size:10px;color:var(--textm);margin-left:5px}
+
+  /* ABSD table */
+  .at{width:100%;border-collapse:collapse;font-size:11px;margin-top:7px}
+  .at th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--textm);padding:0 0 6px;border-bottom:1px solid var(--border)}
+  .at td{padding:6px 0;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:11px;vertical-align:middle}
+  .at td:first-child{color:var(--text);font-family:var(--ui)}
+  .at td:last-child{text-align:right}
+  .at tr.ar td{color:var(--accent)!important}
+  .abadge{display:inline-block;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:var(--accent);font-size:8px;font-family:var(--ui);font-weight:700;letter-spacing:.5px;padding:1px 5px;border-radius:10px;margin-left:4px}
+
+  /* warn */
+  .wb{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 11px;font-size:11px;color:#FBD34D;margin-top:10px;display:flex;gap:7px;align-items:flex-start}
+  .wi{flex-shrink:0;margin-top:1px}
+
+  /* divider */
+  hr.dv{border:none;border-top:1px solid var(--border);margin:14px 0}
+  .ssub{font-size:10px;font-weight:700;color:var(--textm);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px;margin-top:14px}
+  .ssub:first-child{margin-top:0}
+
+  /* ──────────────────────────────────────────────
+     PAYMENT TIMELINE
+  ────────────────────────────────────────────── */
+  .tl-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px}
+  .tl-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .tl-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--textm)}
+  .tl-date-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tl-date-row label{font-size:11px;color:var(--text2);white-space:nowrap}
+  .tl-date-row input[type=date]{background:var(--navy);border:1.5px solid var(--borderl);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px;outline:none;-webkit-appearance:none;cursor:pointer}
+  .tl-date-row input[type=date]:focus{border-color:var(--accent)}
+  .tl-date-row input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6)}
+
+  /* timeline track */
+  .tl-track{position:relative;padding-left:28px}
+  .tl-track::before{content:'';position:absolute;left:9px;top:10px;bottom:10px;width:2px;background:linear-gradient(to bottom,var(--accent),var(--purple),var(--teal));border-radius:1px;opacity:.35}
+
+  .tl-item{position:relative;margin-bottom:0}
+  .tl-item:last-child .tl-body{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .tl-dot{position:absolute;left:-28px;top:13px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid var(--navy);z-index:1;flex-shrink:0}
+  .tl-body{padding:10px 0 16px 0;border-bottom:1px solid var(--border)}
+  .tl-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .tl-left{flex:1;min-width:0}
+  .tl-step{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px}
+  .tl-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .tl-date-lbl{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:4px}
+  .tl-desc{font-size:11px;color:var(--textm);line-height:1.5}
+  .tl-right{text-align:right;flex-shrink:0}
+  .tl-amt{font-family:var(--mono);font-size:15px;font-weight:700;line-height:1}
+  .tl-amtsub{font-size:10px;color:var(--textm);font-family:var(--mono);margin-top:3px}
+  .tl-tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.5px;margin-top:5px}
+  .tag-cash{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+  .tag-cpf{background:rgba(16,185,129,.12);color:#6EE7B7;border:1px solid rgba(16,185,129,.25)}
+  .tag-loan{background:rgba(59,130,246,.12);color:#93C5FD;border:1px solid rgba(59,130,246,.25)}
+  .tag-info{background:rgba(139,92,246,.12);color:#C4B5FD;border:1px solid rgba(139,92,246,.25)}
+  .tag-warn{background:rgba(239,68,68,.12);color:#FCA5A5;border:1px solid rgba(239,68,68,.25)}
+
+  /* timeline total bar */
+  .tl-total{background:var(--navy3);border-radius:10px;padding:14px 16px;margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tlt-item .tlt-lbl{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--textm);margin-bottom:5px}
+  .tlt-item .tlt-val{font-family:var(--mono);font-size:14px;font-weight:700}
+
+  /* deadline pill */
+  .deadline{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10px;font-family:var(--mono);color:var(--textm)}
+  .dl-dot{width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* anim */
+  .card,.mc,.tl-card{animation:fadeUp .3s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  select option{background:#1E3148}
+
+  /* ── CPF breakdown box ── */
+  .cpf-box{background:var(--navy3);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+  .cpf-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+  .cpf-row .cr-lbl{color:var(--text2);display:flex;align-items:center;gap:6px}
+  .cpf-row .cr-val{font-family:var(--mono);font-size:12px;font-weight:600}
+  .cpf-bar-wrap{margin-top:4px}
+  .cpf-bar{height:6px;background:var(--navy);border-radius:3px;overflow:hidden}
+  .cpf-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+  .cpf-bar-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--textm);font-family:var(--mono);margin-top:3px}
+  .cpf-warn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:7px;padding:7px 10px;font-size:11px;color:#FCA5A5;margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+  .cpf-ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:7px;padding:7px 10px;font-size:11px;color:#6EE7B7;margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+
+  /* ── Dual downpayment input ── */
+  .dp-dual{display:grid;grid-template-columns:1fr auto 90px;align-items:center;gap:6px}
+  .dp-sep{font-size:10px;color:var(--textm);font-weight:600;text-align:center;padding:0 2px}
+  .dp-pct-wrap input{padding-left:26px!important}
+  .dp-amt-wrap input{min-width:0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>SG Property Calculator</h1>
+    <p>Mortgage · Downpayment · ABSD · Fixed + SORA · Payment Timeline</p>
+  </div>
+  <span class="badge">2024 ABSD RATES</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Summary strip -->
+  <div class="strip">
+    <div class="mc hi">
+      <div class="ml">Fixed Period Monthly</div>
+      <div class="mv"><span class="cur">S$</span><span id="s-fm">0</span></div>
+      <div class="ms" id="s-fs">Yrs 1–2</div>
+    </div>
+    <div class="mc hi2">
+      <div class="ml">SORA Period Monthly</div>
+      <div class="mv"><span class="cur">S$</span><span id="s-sm">0</span></div>
+      <div class="ms" id="s-ss">Yr 3+</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Total Upfront Cash</div>
+      <div class="mv"><span class="cur">S$</span><span id="s-up">0</span></div>
+      <div class="ms">DP + BSD + ABSD</div>
+    </div>
+    <div class="mc">
+      <div class="ml">ABSD + BSD</div>
+      <div class="mv"><span class="cur">S$</span><span id="s-tx">0</span></div>
+      <div class="ms" id="s-txs">—</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Loan Amount</div>
+      <div class="mv"><span class="cur">S$</span><span id="s-ln">0</span></div>
+      <div class="ms" id="s-lns">—</div>
+    </div>
+  </div>
+
+  <!-- Two-column section -->
+  <div class="cols">
+
+    <!-- LEFT column -->
+    <div class="col">
+
+      <!-- Property details -->
+      <div class="card">
+        <div class="ctitle">Property Details</div>
+        <div class="field">
+          <label>Asking Price</label>
+          <div class="iw"><span class="pfx">S$</span><input type="text" id="price" value="1,600,000"></div>
+        </div>
+        <div class="field">
+          <label>Downpayment</label>
+          <div class="dp-dual">
+            <div class="iw dp-amt-wrap"><span class="pfx">S$</span><input type="text" id="dp" value="400,000" placeholder="e.g. 400,000"></div>
+            <div class="dp-sep">or</div>
+            <div class="iw dp-pct-wrap"><span class="pfx">%</span><input type="number" id="dp-pct-input" value="25" min="1" max="99" step="0.1" placeholder="25"></div>
+          </div>
+          <div class="sw" style="margin-top:8px">
+            <input type="range" id="dps" min="1" max="99" value="25" step="0.5">
+            <div class="sl"><span>1%</span><span id="dppl" style="font-weight:600;color:var(--text2)">25%</span><span>99%</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Loan Tenure (years)</label>
+          <div class="iw"><span class="pfx" style="font-family:var(--ui);font-size:10px">Yrs</span><input type="number" id="tenure" value="30" min="1" max="35" style="padding-left:40px"></div>
+        </div>
+        <div id="warn-area"></div>
+      </div>
+
+      <!-- Buyer profile -->
+      <div class="card">
+        <div class="ctitle">Buyer Profile (ABSD)</div>
+        <div class="field">
+          <label>Residency Status</label>
+          <div class="iw">
+            <select id="res">
+              <option value="citizen">Singapore Citizen</option>
+              <option value="pr" selected>Singapore PR</option>
+              <option value="foreigner">Foreigner</option>
+              <option value="entity">Entity (Company)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>This will be your…</label>
+          <div class="iw">
+            <select id="pc">
+              <option value="1" selected>1st property</option>
+              <option value="2">2nd property</option>
+              <option value="3">3rd or more</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- CPF Allocation -->
+      <div class="card">
+        <div class="ctitle">CPF Available for Property</div>
+
+        <div class="field">
+          <label>CPF OA Balance</label>
+          <div class="iw"><span class="pfx">S$</span><input type="text" id="cpf-oa" value="0" placeholder="0"></div>
+        </div>
+
+        <div class="field">
+          <label>Amount to Allocate to This Purchase</label>
+          <div class="iw"><span class="pfx">S$</span><input type="text" id="cpf-alloc" value="0" placeholder="0"></div>
+          <div class="sw" style="margin-top:6px">
+            <input type="range" id="cpf-slider" min="0" max="100" value="0" step="1">
+            <div class="sl"><span>0%</span><span id="cpf-pct-lbl" style="font-weight:600;color:var(--text2)">0%</span><span>100% of OA</span></div>
+          </div>
+        </div>
+
+        <!-- CPF usage breakdown -->
+        <div id="cpf-breakdown" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Upfront Cost Breakdown</div>
+        <div class="bl">
+          <div class="lr"><div class="ll"><div class="dot" style="background:#3B82F6"></div>Downpayment (total)</div><div class="lrv"><span id="l-dp">S$ 0</span><span class="lrp" id="l-dpp"></span></div></div>
+          <div class="lr" style="padding-left:14px"><div class="ll"><div class="dot" style="background:#10B981"></div>↳ CPF portion</div><div class="lrv" style="color:#6EE7B7"><span id="l-dp-cpf">S$ 0</span></div></div>
+          <div class="lr" style="padding-left:14px"><div class="ll"><div class="dot" style="background:#F59E0B"></div>↳ Cash portion</div><div class="lrv" style="color:#FCD34D"><span id="l-dp-cash">S$ 0</span></div></div>
+          <div class="lr"><div class="ll"><div class="dot" style="background:#F59E0B"></div>Buyer's Stamp Duty (BSD)</div><div class="lrv"><span id="l-bsd">S$ 0</span><span class="lrp" id="l-bsdp"></span></div></div>
+          <div class="lr"><div class="ll"><div class="dot" style="background:#EF4444"></div>ABSD</div><div class="lrv"><span id="l-absd">S$ 0</span><span class="lrp" id="l-absdp"></span></div></div>
+          <div class="lr" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            <div class="ll" style="color:var(--text);font-weight:600">Total Cash Out-of-Pocket</div>
+            <div class="lrv" style="color:var(--amber);font-size:14px" id="l-tot">S$ 0</div>
+          </div>
+          <div class="lr">
+            <div class="ll" style="color:#6EE7B7;font-weight:600">Total CPF Used</div>
+            <div class="lrv" style="color:#6EE7B7;font-size:13px" id="l-tot-cpf">S$ 0</div>
+          </div>
+        </div>
+        <hr class="dv">
+        <div class="ssub" style="margin-top:0">ABSD Reference</div>
+        <table class="at">
+          <thead><tr><th>Profile</th><th>1st</th><th>2nd</th><th style="text-align:right">3rd+</th></tr></thead>
+          <tbody>
+            <tr id="r-citizen"><td>🇸🇬 Citizen</td><td>0%</td><td>20%</td><td style="text-align:right">30%</td></tr>
+            <tr id="r-pr"><td>🟢 PR</td><td>5%</td><td>30%</td><td style="text-align:right">35%</td></tr>
+            <tr id="r-foreigner"><td>🌍 Foreigner</td><td>60%</td><td>60%</td><td style="text-align:right">60%</td></tr>
+            <tr id="r-entity"><td>🏢 Entity</td><td>65%</td><td>65%</td><td style="text-align:right">65%</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:9px;color:var(--textm);margin-top:7px;font-family:var(--mono)">ABSD rates effective Jan 2024. Verify with IRAS.</div>
+      </div>
+
+    </div><!-- end left col -->
+
+    <!-- RIGHT column -->
+    <div class="col">
+
+      <!-- Interest rate card -->
+      <div class="card">
+        <div class="ctitle">Interest Rate Structure</div>
+        <div class="rbuckets">
+          <div class="rbucket fb">
+            <div class="bpill pf">FIXED</div>
+            <div class="brd" id="bd-f">2.50%</div>
+            <div class="bdesc" id="bd-fd">Years 1–2</div>
+            <div class="fyr">
+              <label>Fixed for</label>
+              <input type="number" id="fy" value="2" min="1" max="10">
+              <label>yrs</label>
+            </div>
+            <div class="frt">
+              <div class="sml">Fixed rate (% p.a.)</div>
+              <input type="number" id="fr" value="2.50" step="0.01" min="0.1" max="15">
+            </div>
+          </div>
+          <div class="rbucket sb">
+            <div class="bpill ps">SORA</div>
+            <div class="brd" id="bd-s">1.61%</div>
+            <div class="bdesc" id="bd-sd">Yr 3 onwards</div>
+
+            <!-- Tenor selector -->
+            <div class="sora-tenor-row">
+              <label>Tenor</label>
+              <div class="tenor-btns">
+                <button class="tenor-btn" id="tenor-1m" onclick="setTenor('1m')">1M</button>
+                <button class="tenor-btn active" id="tenor-3m" onclick="setTenor('3m')">3M</button>
+                <button class="tenor-btn" id="tenor-6m" onclick="setTenor('6m')">6M</button>
+              </div>
+            </div>
+
+            <div class="sis">
+              <div class="smi"><div class="sml" id="sora-input-label">3M SORA (%)</div><input type="number" id="sora" value="1.0711" step="0.0001" min="0" max="15"></div>
+              <div class="smi"><div class="sml">Spread (%)</div><input type="number" id="spread" value="0.50" step="0.01" min="0" max="5"></div>
+            </div>
+            <div class="seq" id="seq">3M SORA + spread = 1.57%</div>
+            <div class="sora-fetch-row">
+              <button class="sora-btn" id="sora-fetch-btn" onclick="fetchSora()">
+                <span id="sora-btn-icon">↻</span> Refresh
+              </button>
+              <div class="sora-live" id="sora-live-status">
+                <span class="sl-val" id="sl-val">1.0711%</span>
+                <span class="sl-date" id="sl-date"> · as of 9 Jun 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rtl">
+          <div class="tbar"><div class="tbf" id="tbf" style="width:6.67%"></div><div class="tbs"></div></div>
+          <div class="tll"><span>Yr 0</span><span id="tlm"></span><span id="tle"></span></div>
+        </div>
+        <div class="phc">
+          <div class="pb pf2">
+            <div class="pt">📌 Fixed Phase</div>
+            <div class="pm" id="ph-fm">S$ 0</div>
+            <div class="pd" id="ph-fd">—</div>
+          </div>
+          <div class="pb ps2">
+            <div class="pt">〜 SORA Phase</div>
+            <div class="pm" id="ph-sm">S$ 0</div>
+            <div class="pd" id="ph-sd">—</div>
+            <div class="pdelta" id="ph-delta"></div>
+          </div>
+        </div>
+        <div class="ic">
+          <div class="icl">Total interest over full tenure</div>
+          <div class="icv" id="tot-int">S$ 0</div>
+        </div>
+      </div>
+
+    </div><!-- end right col -->
+  </div><!-- end cols -->
+
+  <!-- ═══════════════════════════════════════════
+       PAYMENT TIMELINE (full width)
+  ════════════════════════════════════════════ -->
+  <div class="tl-card">
+    <div class="tl-header">
+      <div class="tl-title">📅 Purchase Payment Timeline</div>
+      <div class="tl-date-row">
+        <label>OTP Grant Date:</label>
+        <input type="date" id="otp-date" value="">
+        <label style="margin-left:6px">Completion (weeks after OTP exercise):</label>
+        <div class="iw" style="width:80px">
+          <input type="number" id="comp-weeks" value="10" min="8" max="16" style="padding-left:10px;text-align:center">
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-track" id="tl-track">
+      <!-- Dynamically generated -->
+    </div>
+
+    <div class="tl-total">
+      <div class="tlt-item">
+        <div class="tlt-lbl">Cash Before Keys</div>
+        <div class="tlt-val" id="tl-cash" style="color:var(--amber)">S$ 0</div>
+      </div>
+      <div class="tlt-item">
+        <div class="tlt-lbl">CPF Usable</div>
+        <div class="tlt-val" id="tl-cpf" style="color:var(--green)">S$ 0</div>
+      </div>
+      <div class="tlt-item">
+        <div class="tlt-lbl">Bank Loan Disbursed at Completion</div>
+        <div class="tlt-val" id="tl-loan" style="color:var(--accent)">S$ 0</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end wrap -->
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const ABSD={citizen:[0,.20,.30],pr:[.05,.30,.35],foreigner:[.60,.60,.60],entity:[.65,.65,.65]};
+
+function calcBSD(p){
+  const t=[[180000,.01],[180000,.02],[640000,.03],[500000,.04],[Infinity,.05]];
+  let b=0,r=p;
+  for(const[band,rate]of t){if(r<=0)break;const x=Math.min(r,band);b+=x*rate;r-=x;}
+  return Math.round(b);
+}
+
+function fmt(n){return Math.round(n).toLocaleString('en-SG')}
+function pi(v){return parseFloat(String(v).replace(/,/g,''))||0}
+
+function amort(principal,annRate,months){
+  if(principal<=0)return{m:0,p:0,i:0};
+  const r=annRate/100/12;
+  if(r===0)return{m:principal/months,p:principal/months,i:0};
+  const m=principal*(r*Math.pow(1+r,months))/(Math.pow(1+r,months)-1);
+  return{m,p:m-principal*r,i:principal*r};
+}
+
+function balAfter(principal,annRate,monthly,months){
+  const r=annRate/100/12;let b=principal;
+  for(let i=0;i<months;i++){b-=(monthly-b*r);if(b<0)b=0;}
+  return b;
+}
+
+// Date helpers
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+function addWeeks(d,n){return addDays(d,n*7)}
+function fmtDate(d){if(!d)return '—';return d.toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'})}
+function diffDays(a,b){return Math.round((b-a)/86400000)}
+
+// ── Input wiring ───────────────────────────────────────────────────────────────
+function setupComma(id){
+  document.getElementById(id).addEventListener('input',function(){
+    const raw=this.value.replace(/,/g,'').replace(/[^0-9]/g,'');
+    const n=parseInt(raw,10);
+    this.value=isNaN(n)?'':n.toLocaleString('en-SG');
+    calc();
+  });
+}
+setupComma('price');
+
+// ── Downpayment helpers ─────────────────────────────────────────────────────
+function getPrice(){ return pi(document.getElementById('price').value); }
+
+function setDpDisplays(pct, amt){
+  // Update the two non-source fields and slider label
+  // Called with the computed values — callers set their own field first
+  document.getElementById('dppl').textContent = pct.toFixed(1) + '%';
+}
+
+// Source: dollar field changed
+document.getElementById('dp').addEventListener('input', function(){
+  // Comma-format the raw input
+  const raw = this.value.replace(/,/g,'').replace(/[^0-9]/g,'');
+  const n   = parseInt(raw, 10);
+  this.value = isNaN(n) ? '' : n.toLocaleString('en-SG');
+
+  const price = getPrice();
+  const amt   = pi(this.value);
+  const pct   = price > 0 ? Math.round(amt / price * 1000) / 10 : 0;
+
+  document.getElementById('dp-pct-input').value = pct.toFixed(1);
+  document.getElementById('dps').value = Math.min(99, Math.max(1, pct));
+  setDpDisplays(pct, amt);
+  calc();
+});
+
+// Source: percent field changed
+document.getElementById('dp-pct-input').addEventListener('input', function(){
+  const price = getPrice();
+  const pct   = parseFloat(this.value) || 0;
+  const amt   = Math.round(price * pct / 100);
+
+  document.getElementById('dp').value = amt > 0 ? fmt(amt) : '';
+  document.getElementById('dps').value = Math.min(99, Math.max(1, pct));
+  setDpDisplays(pct, amt);
+  calc();
+});
+
+// Source: slider changed
+document.getElementById('dps').addEventListener('input', function(){
+  const price = getPrice();
+  const pct   = parseFloat(this.value) || 0;
+  const amt   = Math.round(price * pct / 100);
+
+  document.getElementById('dp').value = amt > 0 ? fmt(amt) : '';
+  document.getElementById('dp-pct-input').value = pct.toFixed(1);
+  setDpDisplays(pct, amt);
+  calc();
+});
+
+// CPF comma inputs
+setupComma('cpf-oa');
+setupComma('cpf-alloc');
+
+// CPF alloc slider — % of OA balance
+document.getElementById('cpf-slider').addEventListener('input', function(){
+  const oa  = pi(document.getElementById('cpf-oa').value);
+  const pct = parseFloat(this.value) || 0;
+  const amt = Math.round(oa * pct / 100);
+  document.getElementById('cpf-alloc').value = fmt(amt);
+  document.getElementById('cpf-pct-lbl').textContent = pct.toFixed(0) + '%';
+  calc();
+});
+
+// CPF alloc amount typed → update slider %
+document.getElementById('cpf-alloc').addEventListener('input', function(){
+  const oa  = pi(document.getElementById('cpf-oa').value);
+  const amt = pi(this.value);
+  const pct = oa > 0 ? Math.min(100, Math.round(amt / oa * 100)) : 0;
+  document.getElementById('cpf-slider').value = pct;
+  document.getElementById('cpf-pct-lbl').textContent = pct + '%';
+  // don't reformat here — setupComma handles it
+});
+
+// CPF OA change → recalc slider position
+document.getElementById('cpf-oa').addEventListener('input', function(){
+  const oa    = pi(this.value);
+  const alloc = pi(document.getElementById('cpf-alloc').value);
+  const pct   = oa > 0 ? Math.min(100, Math.round(alloc / oa * 100)) : 0;
+  document.getElementById('cpf-slider').value = pct;
+  document.getElementById('cpf-pct-lbl').textContent = pct + '%';
+});
+(function(){
+  const d=new Date();
+  const s=d.toISOString().split('T')[0];
+  document.getElementById('otp-date').value=s;
+})();
+
+['fr','sora','spread','fy','tenure','res','pc','comp-weeks','cpf-oa','cpf-alloc'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',calc);
+});
+document.getElementById('otp-date').addEventListener('change',calc);
+document.getElementById('price').addEventListener('input',calc);
+
+// ── Main calc ──────────────────────────────────────────────────────────────────
+function calc(){
+  const price   =pi(document.getElementById('price').value);
+  const dp      =pi(document.getElementById('dp').value);
+  const tenure  =parseInt(document.getElementById('tenure').value)||30;
+  const res     =document.getElementById('res').value;
+  const propCnt =parseInt(document.getElementById('pc').value)||1;
+  const fixRate =parseFloat(document.getElementById('fr').value)||2.50;
+  const soraR   =parseFloat(document.getElementById('sora').value)||2.92;
+  const soraSpd =parseFloat(document.getElementById('spread').value)||0.50;
+  const fixYrs  =parseInt(document.getElementById('fy').value)||2;
+  const compWks =parseInt(document.getElementById('comp-weeks').value)||10;
+
+  const otpDateStr=document.getElementById('otp-date').value;
+  const otpDate=otpDateStr?new Date(otpDateStr):new Date();
+
+  const cpfOa    = pi(document.getElementById('cpf-oa').value);
+  const cpfAlloc = Math.min(pi(document.getElementById('cpf-alloc').value), cpfOa);
+
+  if(price<=0)return;
+
+  const soraAll=soraR+soraSpd;
+  const dpPct=price>0?Math.round(dp/price*1000)/10:0;
+
+  // CPF rules: 5% deposit must be cash; remaining dp can use CPF up to allocation
+  // Also CPF cannot exceed (purchase price - outstanding loan) — simplified: capped at dp amount
+  const deposit5     = Math.round(price * 0.05); // 1% option + 4% exercise — all cash
+  const remainingDp  = Math.max(0, dp - deposit5);
+  // CPF usable for downpayment: capped by allocation and remaining dp after cash deposit
+  const cpfForDp     = Math.min(cpfAlloc, remainingDp);
+  const cashForDp    = Math.max(0, remainingDp - cpfForDp) + deposit5; // cash = remaining + 5% deposit
+  const cpfRemaining = cpfAlloc - cpfForDp; // leftover CPF after dp (could offset monthly payments)
+
+  const loan=Math.max(0,price-dp);
+  const ltv=Math.round(loan/price*100);
+  const totalMo=tenure*12;
+  const fixMo=Math.min(fixYrs*12,totalMo);
+  const soraMo=totalMo-fixMo;
+
+  const{m:fixM}=amort(loan,fixRate,totalMo);
+  const balSwitch=balAfter(loan,fixRate,fixM,fixMo);
+  const{m:soraM}=amort(balSwitch,soraAll,soraMo>0?soraMo:1);
+  const totInt=(fixM*fixMo+soraM*soraMo)-loan;
+
+  const bsd=calcBSD(price);
+  const absdRates=ABSD[res]||ABSD.citizen;
+  const idx=Math.min(propCnt-1,2);
+  const absdRate=absdRates[idx];
+  const absd=Math.round(price*absdRate);
+  const totalUpfront=dp+bsd+absd;
+
+  const delta=soraM-fixM;
+
+  // ── Rate bucket UI ──
+  document.getElementById('bd-f').textContent=fixRate.toFixed(2)+'%';
+  document.getElementById('bd-s').textContent=soraAll.toFixed(2)+'%';
+  document.getElementById('bd-fd').textContent=`Years 1–${fixYrs}`;
+  document.getElementById('bd-sd').textContent=`Yr ${fixYrs+1} onwards`;
+  document.getElementById('seq').textContent=`${soraR.toFixed(2)}% + ${soraSpd.toFixed(2)}% = ${soraAll.toFixed(2)}%`;
+  document.getElementById('tbf').style.width=Math.round(fixYrs/tenure*100)+'%';
+  document.getElementById('tlm').textContent=`Yr ${fixYrs} (switch)`;
+  document.getElementById('tle').textContent=`Yr ${tenure}`;
+  document.getElementById('ph-fm').textContent=`S$ ${fmt(fixM)}`;
+  document.getElementById('ph-fd').textContent=`${fixRate.toFixed(2)}% · ${fixYrs}yr`;
+  document.getElementById('ph-sm').textContent=`S$ ${fmt(soraM)}`;
+  document.getElementById('ph-sd').textContent=`${soraAll.toFixed(2)}% · ${soraMo/12}yr`;
+  const dEl=document.getElementById('ph-delta');
+  if(delta>0){dEl.style.color='#FCA5A5';dEl.textContent=`▲ +S$ ${fmt(delta)}/mo after switch`}
+  else if(delta<0){dEl.style.color='#6EE7B7';dEl.textContent=`▼ −S$ ${fmt(Math.abs(delta))}/mo after switch`}
+  else dEl.textContent='';
+  document.getElementById('tot-int').textContent=`S$ ${fmt(totInt)}`;
+
+  // ── Summary ──
+  document.getElementById('s-fm').textContent=fmt(fixM);
+  document.getElementById('s-fs').textContent=`${fixRate.toFixed(2)}% · Yr 1–${fixYrs}`;
+  document.getElementById('s-sm').textContent=fmt(soraM);
+  document.getElementById('s-ss').textContent=`${soraAll.toFixed(2)}% · Yr ${fixYrs+1}+`;
+  document.getElementById('s-up').textContent=fmt(totalUpfront);
+  document.getElementById('s-tx').textContent=fmt(bsd+absd);
+  document.getElementById('s-txs').textContent=`BSD ${fmt(bsd)} + ABSD ${fmt(absd)}`;
+  document.getElementById('s-ln').textContent=fmt(loan);
+  document.getElementById('s-lns').textContent=`${ltv}% LTV`;
+
+  // ── Breakdown ──
+  document.getElementById('l-dp').textContent=`S$ ${fmt(dp)}`;
+  document.getElementById('l-dpp').textContent=dpPct.toFixed(1)+'%';
+  document.getElementById('l-dp-cpf').textContent=`S$ ${fmt(cpfForDp)}`;
+  document.getElementById('l-dp-cash').textContent=`S$ ${fmt(cashForDp)}`;
+  document.getElementById('l-bsd').textContent=`S$ ${fmt(bsd)}`;
+  document.getElementById('l-bsdp').textContent=`${(bsd/price*100).toFixed(2)}%`;
+  document.getElementById('l-absd').textContent=`S$ ${fmt(absd)}`;
+  document.getElementById('l-absdp').textContent=absdRate>0?`${(absdRate*100).toFixed(0)}%`:'—';
+  // Total cash = cash for dp + BSD + ABSD (stamps are always cash)
+  const totalCashOop = cashForDp + bsd + absd;
+  document.getElementById('l-tot').textContent=`S$ ${fmt(totalCashOop)}`;
+  document.getElementById('l-tot-cpf').textContent=`S$ ${fmt(cpfForDp)}`;
+
+  // ── CPF breakdown widget ──
+  const cpfBox = document.getElementById('cpf-breakdown');
+  if(cpfAlloc > 0 || cpfOa > 0){
+    const usedPct  = cpfOa > 0 ? Math.min(100, Math.round(cpfForDp / cpfOa * 100)) : 0;
+    const leftover = cpfAlloc - cpfForDp;
+    const overFlag = cpfAlloc > remainingDp && remainingDp >= 0;
+    cpfBox.innerHTML = `
+      <div class="cpf-box">
+        <div class="cpf-row"><span class="cr-lbl"><span style="color:#6EE7B7">●</span> CPF OA Balance</span><span class="cr-val" style="color:#6EE7B7">S$ ${fmt(cpfOa)}</span></div>
+        <div class="cpf-row"><span class="cr-lbl"><span style="color:#A78BFA">●</span> Allocated to Purchase</span><span class="cr-val" style="color:#A78BFA">S$ ${fmt(cpfAlloc)}</span></div>
+        <div class="cpf-row"><span class="cr-lbl"><span style="color:#3B82F6">●</span> Applied to Downpayment</span><span class="cr-val" style="color:#93C5FD">S$ ${fmt(cpfForDp)}</span></div>
+        ${leftover > 0 ? `<div class="cpf-row"><span class="cr-lbl"><span style="color:#0D9488">●</span> CPF Leftover (buffer)</span><span class="cr-val" style="color:#5EEAD4">S$ ${fmt(leftover)}</span></div>` : ''}
+        <div class="cpf-bar-wrap">
+          <div class="cpf-bar"><div class="cpf-bar-fill" style="width:${usedPct}%;background:linear-gradient(90deg,#10B981,#3B82F6)"></div></div>
+          <div class="cpf-bar-lbl"><span>${usedPct}% of OA used</span><span>S$ ${fmt(cpfOa - cpfForDp)} remaining</span></div>
+        </div>
+      </div>
+      ${overFlag ? `<div class="cpf-warn">⚠️ CPF allocation exceeds the remaining downpayment needed (S$ ${fmt(remainingDp)}). Only S$ ${fmt(cpfForDp)} will be used.</div>` : ''}
+      ${cpfForDp > 0 && !overFlag ? `<div class="cpf-ok">✓ S$ ${fmt(cpfForDp)} CPF applied — reduces your cash outlay to <strong>S$ ${fmt(totalCashOop)}</strong>.</div>` : ''}
+    `;
+  } else {
+    cpfBox.innerHTML = '';
+  }
+
+  // ABSD highlight
+  ['citizen','pr','foreigner','entity'].forEach(r=>document.getElementById('r-'+r).classList.remove('ar'));
+  document.querySelectorAll('.abadge').forEach(b=>b.remove());
+  document.getElementById('r-'+res).classList.add('ar');
+  const badge=document.createElement('span');badge.className='abadge';badge.textContent='YOU';
+  document.getElementById('r-'+res).querySelector('td').appendChild(badge);
+
+  // ── Warnings ──
+  const wa=document.getElementById('warn-area');wa.innerHTML='';
+  if(ltv>75){const w=document.createElement('div');w.className='wb';w.innerHTML=`<span class="wi">⚠️</span><div>LTV ${ltv}% exceeds 75% MAS limit. Min downpayment: <strong>S$ ${fmt(price*.25)}</strong>.</div>`;wa.appendChild(w)}
+  if(absd>0){const w=document.createElement('div');w.className='wb';w.innerHTML=`<span class="wi">💡</span><div>ABSD <strong>S$ ${fmt(absd)}</strong> (${(absdRate*100).toFixed(0)}%) due within <strong>14 days</strong> of exercising OTP.</div>`;wa.appendChild(w)}
+  if(soraAll>fixRate+1){const w=document.createElement('div');w.className='wb';w.innerHTML=`<span class="wi">📈</span><div>SORA rate is <strong>${(soraAll-fixRate).toFixed(2)}%</strong> above fixed rate — monthly rises by <strong>S$ ${fmt(Math.abs(delta))}</strong> from Yr ${fixYrs+1}.</div>`;wa.appendChild(w)}
+
+  // ══════════════════════════════════════════════
+  // PAYMENT TIMELINE
+  // ══════════════════════════════════════════════
+
+  // Key dates
+  // Day 0 : OTP granted — pay Option Fee (1%)
+  // Within 14 days of OTP grant: exercise OTP — pay Exercise Fee (4%) → total 5% = 1st part of dp
+  //   (We show exercise at Day 14 as deadline; typical is Day 14)
+  // Within 14 days of exercising OTP: pay BSD + ABSD
+  // Within 8–10 weeks from exercising OTP: sign S&P, pay remaining dp (5% cash + up to 15% CPF)
+  //   Actually: 5% already paid as deposit. Remaining dp = total_dp - 5% of price
+  //   Split: remaining cash (up to 20% of price minus CPF), CPF portion
+  // Completion: comp-weeks after exercising OTP — bank disburses loan, title transferred
+
+  const optionFee   = Math.round(price * 0.01);
+  const exerciseFee = Math.round(price * 0.04);
+  const remainCash  = Math.max(0, remainingDp - cpfForDp);
+
+  // Dates
+  const d0   = new Date(otpDate); d0.setHours(0,0,0,0); // OTP grant
+  const d1   = addDays(d0, 14);   // Exercise OTP deadline
+  const d2   = addDays(d1, 14);   // BSD + ABSD due
+  const d3   = addWeeks(d1, 3);   // S&P signing (~3 wks after exercise)
+  const d4   = addWeeks(d1, compWks); // Completion
+
+  // Estimated first mortgage payment (month after completion)
+  const d5 = new Date(d4);
+  d5.setMonth(d5.getMonth()+1);
+  d5.setDate(1); // assume 1st of following month
+
+  // Build items
+  const items = [
+    {
+      step:'Step 1',
+      name:'Grant of OTP — Option Fee',
+      date: d0,
+      deadline: null,
+      color:'#F59E0B',
+      textColor:'#FCD34D',
+      emoji:'📋',
+      amounts:[{label:'Option Fee (1% cash)',val:optionFee,tag:'cash'}],
+      desc:`Seller grants you the OTP. Pay 1% option fee in cash to secure exclusive rights to purchase. OTP is valid for <strong>14 days</strong> — you must exercise or let it lapse.`,
+    },
+    {
+      step:'Step 2',
+      name:'Exercise OTP — Exercise Fee',
+      date: d1,
+      deadline:'Deadline: within 14 days of OTP grant',
+      color:'#3B82F6',
+      textColor:'#93C5FD',
+      emoji:'✍️',
+      amounts:[
+        {label:'Exercise Fee (4% cash)',val:exerciseFee,tag:'cash'},
+        {label:'Total Deposit Paid',val:deposit5,tag:'info'},
+      ],
+      desc:`Sign the Sale & Purchase Agreement and pay the exercise fee. This makes the sale legally binding. Total deposit = 5% of purchase price, all in cash. Engage your conveyancing lawyer now.`,
+    },
+    {
+      step:'Step 3',
+      name:'Stamp Duties — BSD + ABSD',
+      date: d2,
+      deadline:'Deadline: within 14 days of exercising OTP',
+      color:'#EF4444',
+      textColor:'#FCA5A5',
+      emoji:'🏛️',
+      amounts:[
+        {label:'Buyer\'s Stamp Duty (BSD)',val:bsd,tag:'cash'},
+        ...(absd>0?[{label:`ABSD (${(absdRate*100).toFixed(0)}%)`,val:absd,tag:'warn'}]:[]),
+        {label:'Total Stamp Duties',val:bsd+absd,tag:'info'},
+      ],
+      desc:`Both BSD and ABSD must be paid within <strong>14 days of exercising the OTP</strong>. Late payment attracts penalties from IRAS. Your conveyancing lawyer will typically handle this.`,
+    },
+    {
+      step:'Step 4',
+      name:'S&P Signed — Remaining Downpayment',
+      date: d3,
+      deadline:'Typically ~3 weeks after exercising OTP',
+      color:'#10B981',
+      textColor:'#6EE7B7',
+      emoji:'💰',
+      amounts:[
+        ...(remainCash>0  ? [{label:'Cash portion',val:remainCash,tag:'cash'}] : []),
+        ...(cpfForDp>0    ? [{label:`CPF OA applied`,val:cpfForDp,tag:'cpf'}]  : []),
+        ...(remainingDp<=0? [{label:'Fully covered by 5% deposit',val:0,tag:'info'}] : []),
+      ].filter(a=>a.val>0 || a.tag==='info'),
+      desc:`Pay the remaining downpayment after the 5% cash deposit. ${cpfForDp>0 ? `<strong>S$ ${fmt(cpfForDp)}</strong> will come from your CPF OA, reducing cash needed to <strong>S$ ${fmt(remainCash)}</strong>.` : 'No CPF allocated — full amount in cash. Enter your CPF OA balance above to offset this.'} At least 5% of purchase price must be cash (already satisfied by deposit).`,
+    },
+    {
+      step:'Step 5',
+      name:'Legal Completion — Title Transfer',
+      date: d4,
+      deadline:`~${compWks} weeks after exercising OTP`,
+      color:'#8B5CF6',
+      textColor:'#C4B5FD',
+      emoji:'🔑',
+      amounts:[
+        {label:'Bank Loan Disbursed',val:loan,tag:'loan'},
+        {label:'Legal & Conveyancing Fees (est.)',val:3000,tag:'cash'},
+        {label:'Valuation Fee (est.)',val:500,tag:'cash'},
+      ],
+      desc:`Lawyers complete the conveyancing, bank disburses the loan directly to seller. Title is transferred to your name. You collect the keys! Budget ~S$2,500–$4,000 for legal fees and ~S$350–$500 for valuation.`,
+    },
+    {
+      step:'Step 6',
+      name:'First Mortgage Payment',
+      date: d5,
+      deadline:'1st of the month following completion',
+      color:'#3B82F6',
+      textColor:'#93C5FD',
+      emoji:'📆',
+      amounts:[
+        {label:`Monthly (Fixed @ ${fixRate.toFixed(2)}%)`,val:fixM,tag:'loan'},
+      ],
+      desc:`Your first monthly mortgage repayment begins. Fixed rate of <strong>${fixRate.toFixed(2)}%</strong> applies for the first ${fixYrs} year${fixYrs>1?'s':''}. From Year ${fixYrs+1}, rate switches to SORA + spread (<strong>${soraAll.toFixed(2)}%</strong>), and monthly payment becomes <strong>S$ ${fmt(soraM)}</strong>.`,
+    },
+  ];
+
+  // ── Render timeline ──
+  const track=document.getElementById('tl-track');
+  track.innerHTML='';
+
+  items.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.className='tl-item';
+
+    // Build amounts HTML
+    const amtHtml=item.amounts.map(a=>{
+      if(a.val===0&&a.tag==='info')return`<div class="tl-amtsub" style="color:var(--textm)">${a.label}</div>`;
+      return`<div class="tl-amt" style="color:${item.textColor}">S$ ${fmt(a.val)}</div><div class="tl-amtsub">${a.label} <span class="tl-tag tag-${a.tag}">${a.tag.toUpperCase()}</span></div>`;
+    }).join('');
+
+    const deadlineHtml=item.deadline?`<div class="deadline"><span class="dl-dot"></span>${item.deadline}</div>`:'';
+
+    div.innerHTML=`
+      <div class="tl-dot" style="background:${item.color}20;color:${item.textColor};border-color:${item.color}40">${item.emoji}</div>
+      <div class="tl-body">
+        <div class="tl-row">
+          <div class="tl-left">
+            <div class="tl-step" style="color:${item.textColor}">${item.step}</div>
+            <div class="tl-name">${item.name}</div>
+            <div class="tl-date-lbl">📅 ${fmtDate(item.date)}</div>
+            ${deadlineHtml}
+            <div class="tl-desc" style="margin-top:5px">${item.desc}</div>
+          </div>
+          <div class="tl-right">${amtHtml}</div>
+        </div>
+      </div>`;
+    track.appendChild(div);
+  });
+
+  // ── Timeline totals ──
+  const tlTotalCash = optionFee + exerciseFee + bsd + absd + remainCash + 3500; // incl. est. legal/val
+  document.getElementById('tl-cash').textContent=`S$ ${fmt(tlTotalCash)}`;
+  document.getElementById('tl-cpf').textContent=`S$ ${fmt(cpfForDp)}`;
+  document.getElementById('tl-loan').textContent=`S$ ${fmt(loan)}`;
+}
+
+calc();
+
+// ── Tenor selector ─────────────────────────────────────────────────────────────
+let activeTenor = '3m'; // default
+
+function setTenor(tenor) {
+  activeTenor = tenor;
+  // Update button states
+  ['1m','3m','6m'].forEach(t => {
+    document.getElementById('tenor-' + t).classList.toggle('active', t === tenor);
+  });
+  // Update label
+  const labels = { '1m': '1M SORA (%)', '3m': '3M SORA (%)', '6m': '6M SORA (%)' };
+  document.getElementById('sora-input-label').textContent = labels[tenor];
+  // Auto-fetch the new tenor rate
+  fetchSora();
+}
+
+// ── Live SORA fetch ────────────────────────────────────────────────────────────
+async function fetchSora() {
+  const btn    = document.getElementById('sora-fetch-btn');
+  const icon   = document.getElementById('sora-btn-icon');
+  const slVal  = document.getElementById('sl-val');
+  const slDate = document.getElementById('sl-date');
+
+  btn.disabled = true;
+  icon.className = 'spin';
+  icon.textContent = '↻';
+  slDate.textContent = ' · fetching…';
+
+  // Map tenor to page label
+  const tenorLabel = { '1m': '1M SORA', '3m': '3M SORA', '6m': '6M SORA' }[activeTenor];
+
+  try {
+    const res = await fetch(
+      'https://api.allorigins.win/get?url=' +
+      encodeURIComponent('https://www.cashew.sg/interest-rates/sora')
+    );
+    const json = await res.json();
+    const html = json.contents || '';
+
+    // Match the specific tenor heading followed by its rate value
+    // Page structure: "1M SORA\n\n1.0565%\n\nAs of 9 Jun 2026"
+    const escaped = tenorLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const block    = html.match(new RegExp(escaped + '[\\s\\S]{0,200}?([\\d]{1,2}\\.[\\d]{3,4})%', 'i'));
+    const dateBlock = html.match(/As of\s+([\d]+\s+\w+\s+\d{4})/i);
+
+    if (block && block[1]) {
+      const rate = parseFloat(block[1]);
+      document.getElementById('sora').value = rate.toFixed(4);
+      slVal.textContent  = rate.toFixed(4) + '%';
+      slDate.textContent = (dateBlock ? ' · as of ' + dateBlock[1] : ' · live') + ' (' + tenorLabel + ')';
+      slVal.style.color  = '#6EE7B7';
+      setTimeout(() => slVal.style.color = '#A78BFA', 2000);
+      calc();
+    } else {
+      throw new Error('Rate not found for ' + tenorLabel);
+    }
+  } catch (e) {
+    slDate.textContent = ' · fetch failed — edit manually';
+    slVal.style.color  = '#FCA5A5';
+    setTimeout(() => slVal.style.color = '#A78BFA', 3000);
+  } finally {
+    btn.disabled = false;
+    icon.className = '';
+    icon.textContent = '↻';
+  }
+}
+</script>
+
+<!-- ═══════════════════════════════════════════
+     SOURCES & ASSUMPTIONS
+════════════════════════════════════════════ -->
+<div style="max-width:1040px;margin:24px auto 0;padding:0 0 40px">
+  <div style="background:#152233;border:1px solid #1E3148;border-radius:14px;padding:22px 24px">
+
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4A6585;margin-bottom:18px">
+      📚 Sources &amp; Assumptions
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🏛️ Stamp Duties</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            <b style="color:#8BA0B7">BSD (Buyer's Stamp Duty)</b> — Tiered rates on purchase price:<br>
+            1% on first S$180k · 2% on next S$180k · 3% on next S$640k · 4% on next S$500k · 5% on remainder<br>
+            <a href="https://www.iras.gov.sg/taxes/stamp-duty/for-property/buying-or-acquiring-property/buyer's-stamp-duty-(bsd)" style="color:#3B82F6;font-size:11px">iras.gov.sg — BSD</a>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🏛️ ABSD Rates (effective 27 Apr 2023)</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            <b style="color:#8BA0B7">Singapore Citizen:</b> 0% (1st) · 20% (2nd) · 30% (3rd+)<br>
+            <b style="color:#8BA0B7">Singapore PR:</b> 5% (1st) · 30% (2nd) · 35% (3rd+)<br>
+            <b style="color:#8BA0B7">Foreigner:</b> 60% (all) · <b style="color:#8BA0B7">Entity:</b> 65% (all)<br>
+            <a href="https://www.iras.gov.sg/taxes/stamp-duty/for-property/buying-or-acquiring-property/additional-buyer's-stamp-duty-(absd)" style="color:#3B82F6;font-size:11px">iras.gov.sg — ABSD</a>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🏦 LTV &amp; Loan Rules</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            Max LTV 75% for bank loans (1st property, no outstanding loans)<br>
+            Minimum cash downpayment: 5% of purchase price<br>
+            Remaining 20% can be CPF OA and/or cash<br>
+            Max loan tenure: 30 years (or up to age 65, whichever is shorter)<br>
+            <a href="https://www.mas.gov.sg/regulation/explainers/loan-to-value-limits" style="color:#3B82F6;font-size:11px">mas.gov.sg — LTV Limits</a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">📈 SORA Rate</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            Supports 1M, 3M, and 6M Compounded SORA published daily by MAS<br>
+            Live rates fetched from cashew.sg which sources from MAS<br>
+            Typical bank spread: 0.50%–1.00% above SORA<br>
+            <a href="https://www.mas.gov.sg/monetary-policy/sora" style="color:#3B82F6;font-size:11px">mas.gov.sg — SORA</a> ·
+            <a href="https://www.cashew.sg/interest-rates/sora" style="color:#3B82F6;font-size:11px">cashew.sg — Live Rates</a>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🏠 Purchase Timeline</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            OTP option period: 14 days to exercise<br>
+            BSD + ABSD due: within 14 days of exercising OTP<br>
+            Typical completion: 8–12 weeks after exercising OTP<br>
+            Based on standard resale private property conveyancing practice<br>
+            <a href="https://www.cpf.gov.sg/member/home-ownership/using-your-cpf-to-buy-a-home" style="color:#3B82F6;font-size:11px">cpf.gov.sg — Using CPF</a> ·
+            <a href="https://www.cea.gov.sg" style="color:#3B82F6;font-size:11px">cea.gov.sg</a>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#8BA0B7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🧮 Mortgage Calculation</div>
+          <div style="font-size:12px;color:#4A6585;line-height:1.7">
+            Standard reducing-balance amortisation formula<br>
+            Two-phase: fixed rate (years 1–N), then SORA + spread<br>
+            Phase 2 payment computed on actual remaining balance at switch date<br>
+            Monthly payment = P × [r(1+r)ⁿ] / [(1+r)ⁿ−1]<br>
+            where r = annual rate ÷ 12, n = remaining months
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #1E3148;font-size:11px;color:#4A6585;line-height:1.6">
+      ⚠️ <b style="color:#8BA0B7">Disclaimer:</b> This calculator is for <b style="color:#8BA0B7">estimation purposes only</b> and does not constitute financial or legal advice. Stamp duty figures, ABSD rates, and LTV limits are based on rules current as of <b style="color:#8BA0B7">2024</b>. Always verify with <a href="https://www.iras.gov.sg" style="color:#3B82F6">IRAS</a>, <a href="https://www.mas.gov.sg" style="color:#3B82F6">MAS</a>, and your conveyancing lawyer before making any financial commitment.
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
